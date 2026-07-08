@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
 import {
   Search, Plus, Link2, Camera, ChevronLeft, Sparkles,
-  ShoppingBag, X, Check, ExternalLink, LogOut, Trash2,
+  ShoppingBag, X, Check, ExternalLink, Trash2,
 } from "lucide-react";
 
 const C = {
@@ -17,61 +17,6 @@ const fontImport = `@import url('https://fonts.googleapis.com/css2?family=Fraunc
 const TYPES = ["T-shirt", "Hoodie", "Jean", "Sneakers", "Sac", "Beauté", "Talons", "Autre"];
 const labelStyle = { display: "block", fontFamily: "'Manrope', sans-serif", fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 };
 const inputStyle = { width: "100%", boxSizing: "border-box", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "10px 12px", fontFamily: "'Manrope', sans-serif", fontSize: 13, color: C.text, outline: "none" };
-
-// ---------------------------------------------------------------------------
-// AUTHENTIFICATION
-// ---------------------------------------------------------------------------
-
-function AuthScreen() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [mode, setMode] = useState("login"); // login | signup
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-    const fn = mode === "login" ? supabase.auth.signInWithPassword : supabase.auth.signUp;
-    const { error } = await fn({ email, password });
-    setLoading(false);
-    if (error) setError(error.message);
-    else if (mode === "signup") setError("Compte créé ! Vérifie ta boîte mail pour confirmer, puis connecte-toi.");
-  }
-
-  return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "#f2e4ec", fontFamily: "'Manrope', sans-serif" }}>
-      <style>{fontImport}</style>
-      <form onSubmit={handleSubmit} style={{ width: 340, background: C.bg, borderRadius: 24, padding: 28, boxShadow: "0 20px 60px rgba(168,75,115,0.18)" }}>
-        <div style={{ fontFamily: "'Fraunces', serif", fontSize: 28, fontWeight: 600, color: C.text, marginBottom: 4 }}>🏷️ Tagged</div>
-        <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 22 }}>
-          {mode === "login" ? "Contente de te revoir." : "Crée ton compte."}
-        </div>
-
-        <label style={labelStyle}>Email</label>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={{ ...inputStyle, marginBottom: 14 }} required />
-
-        <label style={labelStyle}>Mot de passe</label>
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ ...inputStyle, marginBottom: 18 }} required minLength={6} />
-
-        {error && <div style={{ fontSize: 12, color: C.primaryDeep, marginBottom: 14 }}>{error}</div>}
-
-        <button type="submit" disabled={loading} style={{ width: "100%", background: C.primary, color: "#fff", border: "none", borderRadius: 14, padding: "13px 0", fontWeight: 700, fontSize: 14, cursor: "pointer", marginBottom: 12 }}>
-          {loading ? "..." : mode === "login" ? "Se connecter" : "Créer mon compte"}
-        </button>
-
-        <button type="button" onClick={() => setMode(mode === "login" ? "signup" : "login")} style={{ width: "100%", background: "none", border: "none", color: C.primaryDeep, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-          {mode === "login" ? "Pas encore de compte ? Créer un compte" : "Déjà un compte ? Se connecter"}
-        </button>
-      </form>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// PETITS COMPOSANTS
-// ---------------------------------------------------------------------------
 
 function PriceTag({ value }) {
   return <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: C.primaryDeep, fontWeight: 500 }}>{value ?? 0}$</span>;
@@ -124,11 +69,7 @@ function ProductCard({ p, onOpen, onToggleStatut, onDelete }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// FORMULAIRE D'AJOUT
-// ---------------------------------------------------------------------------
-
-function AddScreen({ userId, categories, defaultCategoryId, onClose, onSaved }) {
+function AddScreen({ categories, defaultCategoryId, onClose, onSaved }) {
   const [nom, setNom] = useState("");
   const [marque, setMarque] = useState("");
   const [prix, setPrix] = useState("");
@@ -151,7 +92,7 @@ function AddScreen({ userId, categories, defaultCategoryId, onClose, onSaved }) 
 
     let image_url = null;
     if (file) {
-      const path = `${userId}/${Date.now()}-${file.name}`;
+      const path = `${Date.now()}-${file.name}`;
       const { error: upErr } = await supabase.storage.from("product-images").upload(path, file);
       if (!upErr) {
         const { data } = supabase.storage.from("product-images").getPublicUrl(path);
@@ -160,7 +101,6 @@ function AddScreen({ userId, categories, defaultCategoryId, onClose, onSaved }) 
     }
 
     const { error: insErr } = await supabase.from("products").insert({
-      user_id: userId,
       category_id: categoryId,
       type: type || null,
       is_vetement: isVetement,
@@ -252,18 +192,14 @@ function AddScreen({ userId, categories, defaultCategoryId, onClose, onSaved }) 
   );
 }
 
-// ---------------------------------------------------------------------------
-// FORMULAIRE NOUVELLE COLLECTION
-// ---------------------------------------------------------------------------
-
-function NewCategoryForm({ userId, onClose, onSaved }) {
+function NewCategoryForm({ onClose, onSaved }) {
   const [nom, setNom] = useState("");
   const [emoji, setEmoji] = useState("🏷️");
   const [budget, setBudget] = useState("");
 
   async function save() {
     if (!nom) return;
-    await supabase.from("categories").insert({ user_id: userId, nom, emoji, budget: budget ? Number(budget) : null });
+    await supabase.from("categories").insert({ nom, emoji, budget: budget ? Number(budget) : null });
     onSaved();
   }
 
@@ -285,24 +221,13 @@ function NewCategoryForm({ userId, onClose, onSaved }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// APP PRINCIPALE
-// ---------------------------------------------------------------------------
-
 export default function App() {
-  const [session, setSession] = useState(undefined);
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [view, setView] = useState({ screen: "home" });
   const [typeFilter, setTypeFilter] = useState("Tous");
   const [showAdd, setShowAdd] = useState(false);
   const [showNewCat, setShowNewCat] = useState(false);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
-    return () => sub.subscription.unsubscribe();
-  }, []);
 
   async function loadData() {
     const { data: cats } = await supabase.from("categories").select("*").order("created_at");
@@ -311,12 +236,7 @@ export default function App() {
     setProducts(prods || []);
   }
 
-  useEffect(() => { if (session) loadData(); }, [session]);
-
-  if (session === undefined) return null;
-  if (!session) return <AuthScreen />;
-
-  const userId = session.user.id;
+  useEffect(() => { loadData(); }, []);
 
   async function toggleStatut(p) {
     const statut = p.statut === "acheté" ? "à acheter" : "acheté";
@@ -346,9 +266,9 @@ export default function App() {
                   <div style={{ fontSize: 12, color: C.textMuted, fontWeight: 600 }}>Bon retour ✨</div>
                   <div style={{ fontFamily: "'Fraunces', serif", fontSize: 26, color: C.text, fontWeight: 600 }}>Ta wishlist</div>
                 </div>
-                <button onClick={() => supabase.auth.signOut()} style={{ width: 40, height: 40, borderRadius: 14, background: C.surface, border: `1px solid ${C.border}`, cursor: "pointer" }}>
-                  <LogOut size={16} color={C.primaryDeep} />
-                </button>
+                <div style={{ width: 40, height: 40, borderRadius: 14, background: C.surface, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  🏷️
+                </div>
               </div>
 
               <div style={{ display: "flex", gap: 8, overflowX: "auto", marginBottom: 24, paddingBottom: 2 }}>
@@ -429,14 +349,14 @@ export default function App() {
         </div>
 
         {showAdd && categories.length > 0 && (
-          <AddScreen userId={userId} categories={categories} defaultCategoryId={currentCategory?.id} onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); loadData(); }} />
+          <AddScreen categories={categories} defaultCategoryId={currentCategory?.id} onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); loadData(); }} />
         )}
         {showAdd && categories.length === 0 && (
           <div style={{ position: "fixed", inset: 0, background: "rgba(61,43,53,0.35)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }} onClick={() => setShowAdd(false)}>
             <div style={{ background: C.bg, padding: 20, borderRadius: 16, color: C.text, fontSize: 13, maxWidth: 260, textAlign: "center" }}>Crée d'abord une collection avant d'ajouter un article.</div>
           </div>
         )}
-        {showNewCat && <NewCategoryForm userId={userId} onClose={() => setShowNewCat(false)} onSaved={() => { setShowNewCat(false); loadData(); }} />}
+        {showNewCat && <NewCategoryForm onClose={() => setShowNewCat(false)} onSaved={() => { setShowNewCat(false); loadData(); }} />}
       </div>
     </div>
   );
